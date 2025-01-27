@@ -156,7 +156,11 @@ async def resolve_user_id(interaction: discord.Interaction, username: str | None
             await interaction.followup.send("This command must be run in a guild.")
             return None
 
-        matched_members = [member for member in guild.members if member.name == username]
+        if '#' in username:
+            name, discriminator = username.split('#')
+            matched_members = [member for member in guild.members if member.name == name and member.discriminator == discriminator]
+        else:
+            matched_members = [member for member in guild.members if member.name == username]
 
         if len(matched_members) == 0:
             await interaction.followup.send(f"Username '{username}' not found.")
