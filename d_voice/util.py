@@ -62,7 +62,22 @@ def get_aggregate_time(user_id: str, since=None) -> int:
         )
         if since:
             query = query.filter(VoiceHistory.start_time >= since)
-        return query.scalar() or 0
+        total_history = query.scalar() or 0
+
+        active = db_session.query(ActiveSession).filter_by(
+            user_id=user_id
+        ).first()
+
+        total_active = 0
+        if active:
+            now = datetime.now()
+            session_start = active.start_time
+            if since and session_start < since:
+                session_start = since
+            if session_start < now:
+                total_active = int((now - session_start).total_seconds())
+
+        return total_history + total_active
 
 def get_voice_ranking(guild_id: str, since, limit: int = 10):
     with get_db() as db_session:
