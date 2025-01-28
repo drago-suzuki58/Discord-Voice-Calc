@@ -18,6 +18,8 @@ def setup_commands(tree: discord.app_commands.CommandTree):
     )
     async def voice_day(interaction: discord.Interaction, days: int = 1, id: str | None = None):
         await interaction.response.defer()
+        logger.debug(f"{interaction.guild_id} - voice_day - {days} - {id}")
+
         user_id = await resolve_user_id(interaction, id)
         if user_id:
             await display_aggregate(interaction, user_id, "day", days)
@@ -34,6 +36,8 @@ def setup_commands(tree: discord.app_commands.CommandTree):
     )
     async def voice_week(interaction: discord.Interaction, weeks: int = 1, id: str | None = None):
         await interaction.response.defer()
+        logger.debug(f"{interaction.guild_id} - voice_week - {weeks} - {id}")
+
         user_id = await resolve_user_id(interaction, id)
         if user_id:
             await display_aggregate(interaction, user_id, "week", weeks)
@@ -50,6 +54,8 @@ def setup_commands(tree: discord.app_commands.CommandTree):
     )
     async def voice_month(interaction: discord.Interaction, months: int = 1, id: str | None = None):
         await interaction.response.defer()
+        logger.debug(f"{interaction.guild_id} - voice_month - {months} - {id}")
+
         user_id = await resolve_user_id(interaction, id)
         if user_id:
             await display_aggregate(interaction, user_id, "month", months)
@@ -66,6 +72,8 @@ def setup_commands(tree: discord.app_commands.CommandTree):
     )
     async def voice_year(interaction: discord.Interaction, years: int = 1, id: str | None = None):
         await interaction.response.defer()
+        logger.debug(f"{interaction.guild_id} - voice_year - {years} - {id}")
+
         user_id = await resolve_user_id(interaction, id)
         if user_id:
             await display_aggregate(interaction, user_id, "year", years)
@@ -81,6 +89,8 @@ def setup_commands(tree: discord.app_commands.CommandTree):
     )
     async def voice_total(interaction: discord.Interaction, id: str | None = None):
         await interaction.response.defer()
+        logger.debug(f"{interaction.guild_id} - voice_total - {id}")
+
         user_id = await resolve_user_id(interaction, id)
         if user_id:
             await display_aggregate(interaction, user_id, "all time", 0)
@@ -93,22 +103,35 @@ def setup_commands(tree: discord.app_commands.CommandTree):
     )
     async def voice_ranking(interaction: discord.Interaction):
         await interaction.response.defer()
+        logger.debug(f"{interaction.guild_id} - voice_ranking")
+
         since = datetime.now() - timedelta(days=30)
         ranking = get_voice_ranking(guild_id=str(interaction.guild.id), since=since, limit=10)
 
         embed = discord.Embed(
             title="Voice Time Ranking (Last 30 Days)",
+            description="DD:HH:MM (Total Minutes)",
             color=discord.Color.blue(),
             timestamp=datetime.now()
         )
+
         if not ranking:
-            embed.description = "ランキングデータがありません。"
+            embed.description = "No data available."
         else:
             for i, row in enumerate(ranking, start=1):
-                user = interaction.guild.get_member(int(row.user_id))
-                username = user.display_name if user else f"ユーザーID: {row.user_id}"
-                voice_time_minutes = row.total_time // 60
-                embed.add_field(name=f"{i}. {username}", value=f"{voice_time_minutes} 分", inline=False)
+                user_id = row[0]
+                total_time = row[1]
+                user = interaction.guild.get_member(int(user_id))
+                username = user.display_name if user else f"User ID: {user_id}"
+
+                voice_time_minutes = total_time // 60
+                days = voice_time_minutes // (24 * 60)
+                remainder = voice_time_minutes % (24 * 60)
+                hours = remainder // 60
+                mins = remainder % 60
+
+                time_str = f"{days:02}:{hours:02}:{mins:02}"
+                embed.add_field(name=f"{i}. {username}", value=f"{time_str} ({voice_time_minutes} min)", inline=False)
 
         await interaction.followup.send(embed=embed)
 

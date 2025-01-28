@@ -87,5 +87,34 @@ def get_voice_ranking(guild_id: str, since, limit: int = 10):
         ).filter(VoiceHistory.guild_id == guild_id)
         if since:
             q = q.filter(VoiceHistory.start_time >= since)
-        q = q.group_by(VoiceHistory.user_id).order_by(func.sum(VoiceHistory.duration).desc()).limit(limit)
-        return q.all()
+        q = q.group_by(VoiceHistory.user_id)
+
+        results = []
+        for row in q.all():
+            total = row.total_time or 0
+            active_session = db_session.query(ActiveSession).filter_by(
+                user_id=row.user_id, guild_id=guild_id
+            ).first()
+            active_time = 0
+            if active_session:
+                now = datetime.now()
+                start_time = active_session.start_time
+                if since and start_time < since:
+                    start_time = since
+                if start_time < now:
+                    active_time = int((now - start_time).total_seconds())
+            results.append((row.user_id, total + active_time))
+
+        active_only = db_session.query(ActiveSession).filter_by(guild_id=guild_id).all()
+        existing_users = {r[0] for r in results}
+        for a in active_only:
+            if a.user_id not in existing_users:
+                now = datetime.now()
+                start_time = a.start_time
+                if since and start_time < since:
+                    start_time = since
+                active_time = int((now - start_time).total_seconds()) if start_time < now else 0
+                results.append((a.user_id, active_time))
+
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:limit]
