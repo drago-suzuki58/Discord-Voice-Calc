@@ -1,8 +1,8 @@
-# python
 from datetime import datetime
 from sqlalchemy import func
 from d_voice.db.models import VoiceHistory, ActiveSession
 from d_voice.db.sessions import get_db
+import discord
 
 def get_or_create_active_session(
     user_id: str,
@@ -118,3 +118,9 @@ def get_voice_ranking(guild_id: str, since, limit: int = 10):
 
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:limit]
+
+def is_rest_channel(channel: discord.VoiceChannel | None) -> bool:
+    if not channel:
+        return False
+    afk_channel = channel.guild.afk_channel
+    return afk_channel is not None and (channel.id == afk_channel.id)
