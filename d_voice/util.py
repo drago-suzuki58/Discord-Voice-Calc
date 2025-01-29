@@ -58,10 +58,11 @@ def end_active_session(user_id: str, guild_id: str):
             db_session.delete(active)
         db_session.commit()
 
-def get_aggregate_time(user_id: str, since=None) -> int:
+def get_aggregate_time(user_id: str, guild_id, since=None) -> int:
     with get_db() as db_session:
         query = db_session.query(func.sum(VoiceHistory.duration)).filter(
             VoiceHistory.user_id == user_id,
+            VoiceHistory.guild_id == guild_id,
             VoiceHistory.was_rest == False
         )
         if since:
@@ -70,6 +71,7 @@ def get_aggregate_time(user_id: str, since=None) -> int:
 
         active = db_session.query(ActiveSession).filter_by(
             user_id=user_id,
+            guild_id=guild_id,
             is_rest=False
         ).first()
 

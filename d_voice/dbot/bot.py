@@ -194,18 +194,6 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
             for channel in guild.voice_channels:
                 members = channel.members
                 if members:
-                    logger.info(f"Voice channel '{channel.name}' has members: {[member.name for member in members]}")
-                    for member in members:
-                        log_voice_state(member, member.voice)
+                    logger.debug(f"Voice channel '{channel.name}' has members: {[member.name for member in members]}")
                 else:
                     logger.info(f"Voice channel '{channel.name}' is empty")
-
-    def log_voice_state(member, voice_state):
-        if voice_state.self_mute:
-            logger.info(f"{member} is currently self-muted")
-        if voice_state.mute:
-            logger.info(f"{member} is currently server-muted")
-        if voice_state.self_deaf:
-            logger.info(f"{member} is currently self-deafened")
-        if voice_state.deaf:
-            logger.info(f"{member} is currently server-deafened")
