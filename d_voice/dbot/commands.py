@@ -225,7 +225,7 @@ async def display_average(interaction: discord.Interaction, user_id: str, period
 
     time_str = f"{hours:02}:{mins:02}"
     await interaction.followup.send(
-        f"Daily average voice time: {time_str} ({average_time_minutes:.2f} min)\n"
+        f"Daily average voice time for <@{user_id}>: {time_str} ({average_time_minutes:.2f} min)\n"
         f"(from {since if since else 'all time'} to now)"
     )
 

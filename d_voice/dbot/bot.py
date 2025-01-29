@@ -116,7 +116,7 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
             users_to_add = current_user_guild - active_user_guild
 
             for user_id, guild_id in users_to_remove:
-                logger.info(f"Ending ActiveSession for user_id={user_id}, guild_id={guild_id}")
+                logger.debug(f"Ending ActiveSession for user_id={user_id}, guild_id={guild_id}")
                 end_active_session(user_id=user_id, guild_id=guild_id)
 
             for user_id, guild_id in users_to_add:
@@ -187,6 +187,7 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
                         self_deaf=current_self_deaf,
                         server_deaf=current_server_deaf
                     )
+        logger.info("Reconciliation complete.")
 
 
     async def load_voice_channels():
@@ -196,4 +197,4 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
                 if members:
                     logger.debug(f"Voice channel '{channel.name}' has members: {[member.name for member in members]}")
                 else:
-                    logger.info(f"Voice channel '{channel.name}' is empty")
+                    logger.debug(f"Voice channel '{channel.name}' is empty")
