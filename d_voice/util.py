@@ -8,6 +8,7 @@ def get_or_create_active_session(
     user_id: str,
     guild_id: str,
     channel_id: str,
+    rest: bool,
     self_mute: bool,
     server_mute: bool,
     self_deaf: bool,
@@ -23,6 +24,7 @@ def get_or_create_active_session(
                 guild_id=guild_id,
                 channel_id=channel_id,
                 start_time=datetime.now(),
+                is_rest=rest,
                 is_self_muted=self_mute,
                 is_server_muted=server_mute,
                 is_self_deafened=self_deaf,
@@ -46,6 +48,7 @@ def end_active_session(user_id: str, guild_id: str):
                 start_time=active.start_time,
                 end_time=now,
                 duration=int((now - active.start_time).total_seconds()),
+                was_rest=active.is_rest,
                 was_self_muted=active.is_self_muted,
                 was_server_muted=active.is_server_muted,
                 was_self_deafened=active.is_self_deafened,
@@ -58,14 +61,16 @@ def end_active_session(user_id: str, guild_id: str):
 def get_aggregate_time(user_id: str, since=None) -> int:
     with get_db() as db_session:
         query = db_session.query(func.sum(VoiceHistory.duration)).filter(
-            VoiceHistory.user_id == user_id
+            VoiceHistory.user_id == user_id,
+            VoiceHistory.was_rest == False
         )
         if since:
             query = query.filter(VoiceHistory.start_time >= since)
         total_history = query.scalar() or 0
 
         active = db_session.query(ActiveSession).filter_by(
-            user_id=user_id
+            user_id=user_id,
+            is_rest=False
         ).first()
 
         total_active = 0
@@ -84,7 +89,10 @@ def get_voice_ranking(guild_id: str, since, limit: int = 10):
         q = db_session.query(
             VoiceHistory.user_id,
             func.sum(VoiceHistory.duration).label("total_time")
-        ).filter(VoiceHistory.guild_id == guild_id)
+        ).filter(
+            VoiceHistory.guild_id == guild_id,
+            VoiceHistory.was_rest == False
+        )
         if since:
             q = q.filter(VoiceHistory.start_time >= since)
         q = q.group_by(VoiceHistory.user_id)
@@ -93,7 +101,9 @@ def get_voice_ranking(guild_id: str, since, limit: int = 10):
         for row in q.all():
             total = row.total_time or 0
             active_session = db_session.query(ActiveSession).filter_by(
-                user_id=row.user_id, guild_id=guild_id
+                user_id=row.user_id,
+                guild_id=guild_id,
+                is_rest=False
             ).first()
             active_time = 0
             if active_session:
@@ -105,7 +115,10 @@ def get_voice_ranking(guild_id: str, since, limit: int = 10):
                     active_time = int((now - start_time).total_seconds())
             results.append((row.user_id, total + active_time))
 
-        active_only = db_session.query(ActiveSession).filter_by(guild_id=guild_id).all()
+        active_only = db_session.query(ActiveSession).filter_by(
+            guild_id=guild_id,
+            is_rest=False
+        ).all()
         existing_users = {r[0] for r in results}
         for a in active_only:
             if a.user_id not in existing_users:

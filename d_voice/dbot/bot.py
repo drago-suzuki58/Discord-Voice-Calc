@@ -27,32 +27,32 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
     async def on_voice_state_update(member, before, after):
         if before.channel is None and after.channel is not None:
             logger.info(f"{member} has joined {after.channel}")
-            if not is_rest_channel(after.channel):
-                get_or_create_active_session(
-                    user_id=str(member.id),
-                    guild_id=str(member.guild.id),
-                    channel_id=str(after.channel.id),
-                    self_mute=after.self_mute,
-                    server_mute=after.mute,
-                    self_deaf=after.self_deaf,
-                    server_deaf=after.deaf
-                )
+            get_or_create_active_session(
+                user_id=str(member.id),
+                guild_id=str(member.guild.id),
+                channel_id=str(after.channel.id),
+                rest=is_rest_channel(after.channel),
+                self_mute=after.self_mute,
+                server_mute=after.mute,
+                self_deaf=after.self_deaf,
+                server_deaf=after.deaf
+            )
         elif before.channel is not None and after.channel is None:
             logger.info(f"{member} has left {before.channel}")
             end_active_session(user_id=str(member.id), guild_id=str(member.guild.id))
         elif before.channel != after.channel:
             logger.info(f"{member} has moved from {before.channel} to {after.channel}")
             end_active_session(user_id=str(member.id), guild_id=str(member.guild.id))
-            if not is_rest_channel(after.channel):
-                get_or_create_active_session(
-                    user_id=str(member.id),
-                    guild_id=str(member.guild.id),
-                    channel_id=str(after.channel.id),
-                    self_mute=after.self_mute,
-                    server_mute=after.mute,
-                    self_deaf=after.self_deaf,
-                    server_deaf=after.deaf
-                )
+            get_or_create_active_session(
+                user_id=str(member.id),
+                guild_id=str(member.guild.id),
+                channel_id=str(after.channel.id),
+                rest=is_rest_channel(after.channel),
+                self_mute=after.self_mute,
+                server_mute=after.mute,
+                self_deaf=after.self_deaf,
+                server_deaf=after.deaf
+            )
 
         if (before.self_mute != after.self_mute
             or before.mute != after.mute
@@ -66,6 +66,7 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
                     user_id=str(member.id),
                     guild_id=str(member.guild.id),
                     channel_id=str(after.channel.id),
+                    rest=is_rest_channel(after.channel),
                     self_mute=after.self_mute,
                     server_mute=after.mute,
                     self_deaf=after.self_deaf,
@@ -138,6 +139,7 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
                             user_id=str(member.id),
                             guild_id=str(member.guild.id),
                             channel_id=str(channel.id),
+                            rest=is_rest_channel(channel),
                             self_mute=member.voice.self_mute,
                             server_mute=member.voice.mute,
                             self_deaf=member.voice.self_deaf,
