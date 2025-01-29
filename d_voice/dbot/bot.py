@@ -150,6 +150,44 @@ def bot_setup(bot: discord.Client, tree: discord.app_commands.CommandTree):
                 else:
                     logger.warning(f"User with id {user_id} not found in any voice channel of guild {guild_id}.")
 
+            for session in active_sessions:
+                guild = bot.get_guild(int(session.guild_id))
+                if not guild:
+                    logger.warning(f"Guild with id {session.guild_id} not found.")
+                    continue
+
+                channel = guild.get_channel(int(session.channel_id))
+                if not channel or session.user_id not in [str(m.id) for m in channel.members]:
+                    continue
+
+                member = guild.get_member(int(session.user_id))
+                if not member:
+                    continue
+
+                current_self_mute = member.voice.self_mute
+                current_server_mute = member.voice.mute
+                current_self_deaf = member.voice.self_deaf
+                current_server_deaf = member.voice.deaf
+
+                if (session.is_self_muted != current_self_mute or
+                    session.is_server_muted != current_server_mute or
+                    session.is_self_deafened != current_self_deaf or
+                    session.is_server_deafened != current_server_deaf):
+
+                    logger.info(f"Voice state changed for user_id={session.user_id}, guild_id={session.guild_id}. Updating session.")
+                    end_active_session(user_id=session.user_id, guild_id=session.guild_id)
+
+                    get_or_create_active_session(
+                        user_id=session.user_id,
+                        guild_id=session.guild_id,
+                        channel_id=session.channel_id,
+                        rest=session.is_rest,
+                        self_mute=current_self_mute,
+                        server_mute=current_server_mute,
+                        self_deaf=current_self_deaf,
+                        server_deaf=current_server_deaf
+                    )
+
 
     async def load_voice_channels():
         for guild in bot.guilds:
