@@ -93,7 +93,7 @@ def setup_commands(tree: discord.app_commands.CommandTree):
 
         user_id = await resolve_user_id(interaction, id)
         if user_id:
-            await display_aggregate(interaction, user_id, "all time", 0)
+            await display_aggregate(interaction, user_id, "total", 0)
         else:
             await interaction.followup.send("Failed to resolve user ID.")
 
@@ -178,14 +178,19 @@ def setup_commands(tree: discord.app_commands.CommandTree):
 
 async def display_aggregate(interaction: discord.Interaction, user_id: str, period: str, amount: int):
     now = datetime.now()
-    if period == "week":
+    if period == "day":
+        since = now - timedelta(days=amount)
+    elif period == "week":
         since = now - timedelta(weeks=amount)
     elif period == "month":
         since = now - timedelta(days=30 * amount)
     elif period == "year":
         since = now - timedelta(days=365 * amount)
+    elif period == "total":
+        since = None
     else:
-        await interaction.followup.send("Invalid period specified. Please use [\"week\", \"month\", \"year\"]")
+        await interaction.followup.send("Invalid period specified.")
+        return
 
     total_sec = get_aggregate_time(user_id, interaction.guild.id, since)
     total_minutes = total_sec // 60
@@ -197,7 +202,7 @@ async def display_aggregate(interaction: discord.Interaction, user_id: str, peri
     time_str = f"{days:02}:{hours:02}:{mins:02}"
     await interaction.followup.send(
         f"Total voice time for <@{user_id}> in the {period}: {time_str} ({total_minutes} min)\n"
-        f"(from {since} to now)"
+        f"(from {since if since else 'all time'} to now)"
     )
 
 async def display_average(interaction: discord.Interaction, user_id: str, period: str, amount: int):
@@ -208,10 +213,8 @@ async def display_average(interaction: discord.Interaction, user_id: str, period
         since = now - timedelta(days=30 * amount)
     elif period == "year":
         since = now - timedelta(days=365 * amount)
-    elif period == "total":
-        since = None
     else:
-        await interaction.followup.send("Invalid period specified.")
+        await interaction.followup.send("Invalid period specified. Please use [\"week\", \"month\", \"year\"]")
         return
 
     total_sec = get_aggregate_time(user_id, interaction.guild.id, since)
@@ -226,7 +229,7 @@ async def display_average(interaction: discord.Interaction, user_id: str, period
     time_str = f"{hours:02}:{mins:02}"
     await interaction.followup.send(
         f"Daily average voice time for <@{user_id}>: {time_str} ({average_time_minutes:.2f} min)\n"
-        f"(from {since if since else 'all time'} to now)"
+        f"(from {since} to now)"
     )
 
 async def resolve_user_id(interaction: discord.Interaction, username: str | None) -> str | None:
